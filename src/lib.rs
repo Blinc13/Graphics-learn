@@ -1,4 +1,6 @@
-pub mod algorithms;
+pub mod scene;
+pub mod traits;
+pub mod objects;
 
 pub mod Const {
     pub mod Vec {
@@ -16,17 +18,14 @@ pub mod Const {
         pub const ZERO: Vec3 = Vec3 {x: 0.0, y: 0.0, z: 0.0};
     }
 
-    pub mod Funcs {
-        use glam::Vec3;
+    pub mod Colors {
+        use image::Rgb;
 
-        pub fn length(vec: Vec3) -> f32 {
-            let tmp = vec * vec;
+        pub const RED: Rgb<u8> = Rgb([255u8, 0u8, 0u8]);
+        pub const GREEN: Rgb<u8> = Rgb([0u8, 255u8, 0u8]);
+        pub const BLUE: Rgb<u8> = Rgb([0u8, 0u8, 255u8]);
 
-            (tmp.x + tmp.y + tmp.z).sqrt()
-        }
-
-        pub fn dot(fvec: Vec3, svec: Vec3) -> f32 {
-            fvec.length() * (svec.length() * fvec.angle_between(svec).cos())
-        }
+        pub const BLACK: Rgb<u8> = Rgb([0u8, 0u8, 0u8]);
+        pub const WHITE: Rgb<u8> = Rgb([255u8, 255u8, 255u8]);
     }
 }
