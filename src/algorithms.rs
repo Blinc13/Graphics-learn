@@ -3,12 +3,13 @@ use image::Rgb;
 use crate::Const::Vec;
 
 //<CO + tD, CO + tD> = r
-pub fn intersect_sphere(origin: Vec3, direction: Vec3, sphere_pos: Vec3, size: Vec3, sphere_rad: f32) -> (f32, f32) {
-    let relative = origin - sphere_pos;
+pub fn intersect_sphere(origin: Vec3, direction: Vec3, sphere_pos: Vec3, size: Vec3, r: f32) -> (f32, f32) {
+    let CO = (origin - sphere_pos) / size;
+    let D = direction / size;
 
-    let a = direction.dot(direction);
-    let b = 2.0 * relative.dot(direction);
-    let c = relative.dot(relative) - sphere_rad * sphere_rad;
+    let a = D.dot(D);
+    let b = 2.0 * CO.dot(D);
+    let c = CO.dot(CO) - r*r;
 
     let desc = (b*b) - (4.0 * a * c);
 
@@ -31,13 +32,13 @@ pub fn trace_sphere(cords: Vec2) -> Rgb<u8> {
         z: 1.0
     };
 
-    println!("{} {}", direction.y, direction.x);
+    //println!("{} {}", direction.y, direction.x);
 
     let (t1, t2) = intersect_sphere(
         Vec::ZERO,
         direction,
         Vec::FORWARD * 50.0,
-        Vec3::new(1.0, 1.0, 1.0),
+        Vec3::new(1.0, 1.4, 1.0),
         10.0
     );
 
