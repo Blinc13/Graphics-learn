@@ -15,13 +15,18 @@ pub trait Light {
 }
 
 
-pub struct IntersectResult {
+pub struct Intersect {
     pub entry: f32,
     pub exit: f32,
     pub normal: Vec3
 }
 
-impl IntersectResult {
+pub enum IntersectResult {
+    Intersected(Intersect),
+    NoneIntersect
+}
+
+impl Intersect {
     pub fn new(entry: f32, exit: f32, normal: Vec3) -> Self {
         Self {
             entry,

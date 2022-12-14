@@ -1,6 +1,6 @@
 use glam::Vec3;
 use image::Rgb;
-use crate::traits::Render;
+use crate::traits::{Intersect, IntersectResult, Render};
 
 pub struct Sphere {
     position: Vec3,
@@ -22,7 +22,7 @@ impl Sphere {
 
 impl Render for Sphere {
     //<CO + tD, CO + tD> = r*r
-    fn intersect(&self, origin: Vec3, direction: Vec3) -> (f32, f32) {
+    fn intersect(&self, origin: Vec3, direction: Vec3) -> IntersectResult {
         let CO = (origin - self.position) / self.size;
         let D = direction / self.size;
 
@@ -33,14 +33,18 @@ impl Render for Sphere {
         let desc = (b*b) - (4.0 * a * c);
 
         if desc < 0.0 {
-            return (f32::INFINITY, f32::INFINITY);
+            return IntersectResult::NoneIntersect;
         }
 
         let desc = desc.sqrt();
+        let entry = (-b + desc) / (2.0 * a);
 
-        (
-            (-b + desc) / (2.0 * a),
-            (-b - desc) / (2.0 * a)
+        IntersectResult::Intersected (
+            Intersect::new(
+                entry,
+                (-b + desc) / (2.0 * a),
+                (direction * entry) - (self.position / self.size)
+            )
         )
     }
 

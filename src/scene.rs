@@ -14,6 +14,7 @@ use crate::{
         Light
     }
 };
+use crate::traits::{Intersect, IntersectResult};
 
 pub struct Scene {
     objects: Vec<Box<dyn Render>>,
@@ -35,18 +36,18 @@ impl Scene {
         self.light.push(light)
     }
 
-    pub fn intersect_ray(&self, point: Vec3, direction: Vec3) -> Option<(f32, &dyn Render)> {
+    pub fn intersect_ray(&self, point: Vec3, direction: Vec3) -> Option<(Intersect, &dyn Render)> {
         self.objects.iter()
-            .filter_map(| object | {
-                let (t1, _) = object.intersect(point, direction);
-
-                if t1 != f32::INFINITY {
-                    Some((t1, object.as_ref()))
-                } else {
-                    None
-                }
-            })
-            .max_by(| (t1, _), (t2, _) | t1.total_cmp(t2))
+            .filter_map(| object |
+                match object.intersect(point, direction) {
+                    IntersectResult::Intersected(intersect) => Some((intersect, object.as_ref())),
+                    IntersectResult::NoneIntersect => None
+                })
+            .max_by(
+                | (Intersect { entry: t1, .. }, _),
+                  (Intersect { entry: t2, ..}, _) |
+                t1.total_cmp(t2)
+            )
     }
 
     pub fn compute_light(&self, point: Vec3, normal: Vec3) -> f32 {
@@ -55,7 +56,7 @@ impl Scene {
                 let dir = light.get_direction(point, normal);
                 let dot = normal.dot(dir);
 
-                (light.get_intensity() * dot / (normal.length() * dir.length()))
+                light.get_intensity() * dot / (normal.length() * dir.length())
             })
             .filter(| intensive | *intensive > 0.0)
             .sum()
@@ -70,9 +71,8 @@ impl Scene {
         }.normalize();
 
         self.intersect_ray(origin, direction)
-            .map(| (entry, object) | {
+            .map(| ( Intersect {entry, normal, ..}, object) | {
                 let point = direction * entry;
-                let normal = point - object.get_position();
 
                 let light_intensive = self.compute_light(point, normal).clamp(0.0, 150.0) as u8; // All this temporary
                 let object_color = object.get_color().0;
