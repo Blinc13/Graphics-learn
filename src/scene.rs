@@ -57,6 +57,7 @@ impl Scene {
 
                 (light.get_intensity() * dot / (normal.length() * dir.length()))
             })
+            .filter(| intensive | *intensive > 0.0)
             .sum()
     }
 
