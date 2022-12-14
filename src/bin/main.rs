@@ -1,7 +1,10 @@
 use glam::{Vec2, Vec3};
 use image::DynamicImage::ImageRgb8;
-use graphics_learn::algorithms::trace_sphere;
+use image::Rgb;
 use graphics_learn::Const::Colors::{BLUE, RED};
+use graphics_learn::objects::ambient_light::AmbientLight;
+use graphics_learn::objects::global_light::GlobalLight;
+use graphics_learn::objects::point_light::PointLight;
 use graphics_learn::objects::sphere::Sphere;
 use graphics_learn::scene::Scene;
 
@@ -14,8 +17,17 @@ fn main() {
             Vec3::new(0.0, 0.0, 50.0),
             Vec3::new(1.0, 1.0, 1.0),
             10.0,
-            BLUE
+            Rgb::from([0u8, 0u8, 100u8])
         )
+    ));
+    scene.add_light(Box::new(
+        PointLight::new(Vec3::new(30.0, 0.0, 50.0), 25.0)
+    ));
+    scene.add_light(Box::new(
+        AmbientLight::new(30.0)
+    ));
+    scene.add_light(Box::new(
+        GlobalLight::new(Vec3::new(0.2, -0.6, 0.2), 10.0)
     ));
 
     for x in 0..1000 {
