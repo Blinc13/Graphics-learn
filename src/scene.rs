@@ -5,6 +5,7 @@ use crate::{
         Colors::BLACK,
         Vec::{
             FORWARD,
+            RIGHT,
             ZERO
         }
     },
@@ -13,7 +14,6 @@ use crate::{
         Light
     }
 };
-use crate::Const::Vec::RIGHT;
 
 pub struct Scene {
     objects: Vec<Box<dyn Render>>,
@@ -35,18 +35,18 @@ impl Scene {
         self.light.push(light)
     }
 
-    pub fn intersect_ray(&self, point: Vec3, direction: Vec3) -> Option<(f32, Vec3, &dyn Render)> {
+    pub fn intersect_ray(&self, point: Vec3, direction: Vec3) -> Option<(f32, &dyn Render)> {
         self.objects.iter()
             .filter_map(| object | {
-                let (t1, _, normal) = object.intersect(point, direction);
+                let (t1, _) = object.intersect(point, direction);
 
                 if t1 != f32::INFINITY {
-                    Some((t1, normal, object.as_ref()))
+                    Some((t1, object.as_ref()))
                 } else {
                     None
                 }
             })
-            .max_by(| (t1, _, _), (t2, _, _) | t1.total_cmp(t2))
+            .max_by(| (t1, _), (t2, _) | t1.total_cmp(t2))
     }
 
     pub fn compute_light(&self, point: Vec3, normal: Vec3) -> f32 {
@@ -70,8 +70,11 @@ impl Scene {
         }.normalize();
 
         self.intersect_ray(origin, direction)
-            .map(| (entry, normal, object) | {
-                let light_intensive = self.compute_light(direction * entry, normal).clamp(0.0, 40.0) as u8;
+            .map(| (entry, object) | {
+                let point = direction * entry;
+                let normal = point - object.get_position();
+
+                let light_intensive = self.compute_light(point, normal).clamp(0.0, 150.0) as u8; // All this temporary
                 let object_color = object.get_color().0;
 
                 Rgb::from([object_color[0] + light_intensive, object_color[1] + light_intensive, object_color[2] + light_intensive])
