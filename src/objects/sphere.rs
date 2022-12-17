@@ -43,7 +43,7 @@ impl Render for Sphere {
             Intersect::new(
                 entry,
                 (-b + desc) / (2.0 * a),
-                (direction * entry) - (self.position / self.size)
+                (((direction * entry) - self.position) / self.size)
             )
         )
     }

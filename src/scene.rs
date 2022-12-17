@@ -14,6 +14,7 @@ use crate::{
         Light
     }
 };
+use crate::Const::Vec::UP;
 use crate::traits::{Intersect, IntersectResult};
 
 pub struct Scene {
@@ -50,20 +51,29 @@ impl Scene {
             )
     }
 
-    pub fn compute_light(&self, point: Vec3, normal: Vec3) -> f32 {
+    pub fn compute_light(&self, point: Vec3, dir: Vec3, normal: Vec3) -> f32 {
         self.light.iter()
             .map(| light | {
-                let dir = light.get_direction(point, normal);
-                let dot = normal.dot(dir);
+                let d = light.get_direction(point, normal);
+                let dot = normal.dot(d);
 
-                light.get_intensity() * dot / (normal.length() * dir.length())
+                let i = light.get_intensity() * dot / (normal.length() * d.length());
+
+                let r = 2.0 * normal * normal.dot(d) - d;
+                let dot = r.dot(dir);
+
+                if dot > 0.0 {
+                    i + light.get_intensity() * (dot / (r.length() * dir.length()))
+                } else {
+                    i
+                }
             })
             .filter(| intensive | *intensive > 0.0)
             .sum()
     }
 
     pub fn render_pixel(&self, cord: Vec2) -> Rgb<u8> {
-        let origin = ZERO;
+        let origin = RIGHT * 0.0 + UP * 0.0;
         let direction = Vec3 {
             x: cord.x * (1.0 / 1000.0),
             y: cord.y * (1.0 / 1000.0),
@@ -72,9 +82,10 @@ impl Scene {
 
         self.intersect_ray(origin, direction)
             .map(| ( Intersect {entry, normal, ..}, object) | {
-                let point = direction * entry;
+                let dir = (direction - origin).normalize();
+                let point = dir * entry;
 
-                let light_intensive = self.compute_light(point, normal).clamp(0.0, 150.0) as u8; // All this temporary
+                let light_intensive = self.compute_light(point, dir, normal).clamp(0.0, 150.0) as u8; // All this temporary
                 let object_color = object.get_color().0;
 
                 Rgb::from([object_color[0] + light_intensive, object_color[1] + light_intensive, object_color[2] + light_intensive])
