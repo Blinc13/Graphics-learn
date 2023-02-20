@@ -24,4 +24,7 @@ impl Light for GlobalLight {
     fn get_direction(&self, point: Vec3, normal: Vec3) -> Vec3 {
         self.direction
     }
+    fn is_point(&self) -> bool {
+        false
+    }
 }

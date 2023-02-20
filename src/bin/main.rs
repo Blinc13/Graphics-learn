@@ -14,14 +14,30 @@ fn main() {
 
     scene.add_object(Box::new(
         Sphere::new(
-            Vec3::new(0.0, 0.0, 5.0),
+            Vec3::new(1.0, -2.0, 15.0),
             Vec3::new(1.0, 1.0, 1.0),
             2.0,
             Rgb::from([0u8, 0u8, 100u8])
         )
     ));
+    // scene.add_object(Box::new(
+    //     Sphere::new(
+    //         Vec3::new(0.0, 5001.0, 0.0),
+    //         Vec3::new(1.0, 1.0, 1.0),
+    //         5000.0,
+    //         Rgb::from([50u8, 50u8, 0u8])
+    //     )
+    // ));
+    scene.add_object(Box::new(
+        Sphere::new(
+            Vec3::new(1.0, 0.0, 18.0),
+            Vec3::new(1.0, 1.0, 1.0),
+            2.0,
+            Rgb([100u8, 0u8, 0u8])
+        )
+    ));
     scene.add_light(Box::new(
-        PointLight::new(Vec3::new(-15.0, -10.0, -10.0), 50.0)
+        PointLight::new(Vec3::new(0.0, 10.0, 0.0), 50.0)
     ));
     scene.add_light(Box::new(
         AmbientLight::new(1.0)

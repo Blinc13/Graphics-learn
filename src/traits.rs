@@ -11,6 +11,7 @@ pub trait Render {
 pub trait Light {
     fn get_intensity(&self) -> f32;
 
+    fn is_point(&self) -> bool;
     fn get_direction(&self, point: Vec3, normal: Vec3) -> Vec3;
 }
 

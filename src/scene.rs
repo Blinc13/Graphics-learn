@@ -1,3 +1,4 @@
+use std::ops::Index;
 use image::Rgb;
 use glam::{Vec2, Vec3};
 use crate::{
@@ -44,20 +45,32 @@ impl Scene {
                     IntersectResult::Intersected(intersect) => Some((intersect, object.as_ref())),
                     IntersectResult::NoneIntersect => None
                 })
-            .max_by(
-                | (Intersect { entry: t1, .. }, _),
-                  (Intersect { entry: t2, ..}, _) |
-                t1.total_cmp(t2)
+            .filter(| (Intersect { entry, ..}, _) | *entry > 0.0)
+            .min_by(
+                | (Intersect { entry: t1, exit: t3, .. }, _),
+                  (Intersect { entry: t2, exit: t4, .. }, _) |
+                t1.total_cmp(t2).then(t3.total_cmp(t4))
             )
     }
 
     pub fn compute_light(&self, point: Vec3, dir: Vec3, normal: Vec3) -> f32 {
         self.light.iter()
+            .filter( | light | {
+                light.is_point() ||
+                    self
+                        .intersect_ray(point, light.get_direction(point, normal))
+                        .filter(| (Intersect { entry, ..}, _ ) | *entry > 0.0).is_none()
+            })
             .map(| light | {
                 let d = light.get_direction(point, normal);
                 let dot = normal.dot(d);
 
-                let i = light.get_intensity() * dot / (normal.length() * d.length());
+                let mut i = light.get_intensity() * dot / (normal.length() * d.length());
+
+                let dot = normal.dot(d);
+                if dot > 0.0 {
+                    i += light.get_intensity() * dot/(normal.length() * d.length());
+                }
 
                 let r = 2.0 * normal * normal.dot(d) - d;
                 let dot = r.dot(dir);
@@ -80,16 +93,17 @@ impl Scene {
             ..FORWARD
         }.normalize();
 
-        self.intersect_ray(origin, direction)
-            .map(| ( Intersect {entry, normal, ..}, object) | {
-                let dir = (direction - origin).normalize();
-                let point = dir * entry;
-
-                let light_intensive = self.compute_light(point, dir, normal).clamp(0.0, 150.0) as u8; // All this temporary
-                let object_color = object.get_color().0;
-
-                Rgb::from([object_color[0] + light_intensive, object_color[1] + light_intensive, object_color[2] + light_intensive])
-            })
-            .unwrap_or(BLACK)
+        // self.intersect_ray(origin, direction)
+        //     .map(| ( Intersect {entry, normal, ..}, object) | {
+        //         let dir = (direction - origin).normalize();
+        //         let point = dir * entry;
+        //
+        //         let light_intensive = self.compute_light(point + normal * 0.0001, dir, normal).clamp(0.0, 150.0) as u8; // All this temporary
+        //         let object_color = object.get_color().0;
+        //
+        //         Rgb::from([object_color[0] + light_intensive, object_color[1] + light_intensive, object_color[2] + light_intensive])
+        //         //object_color
+        //     })
+        //     .unwrap_or(BLACK)
     }
 }

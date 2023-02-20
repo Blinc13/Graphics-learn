@@ -23,4 +23,7 @@ impl Light for PointLight {
     fn get_direction(&self, point: Vec3, _: Vec3) -> Vec3 {
         point - self.position
     }
+    fn is_point(&self) -> bool {
+        false
+    }
 }

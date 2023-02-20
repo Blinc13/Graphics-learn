@@ -21,4 +21,7 @@ impl Light for AmbientLight {
     fn get_direction(&self, point: Vec3, normal: Vec3) -> Vec3 {
         normal
     }
+    fn is_point(&self) -> bool {
+        false
+    }
 }
