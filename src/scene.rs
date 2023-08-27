@@ -62,24 +62,7 @@ impl Scene {
                         .filter(| (Intersect { entry, ..}, _ ) | *entry > 0.0).is_none()
             })
             .map(| light | {
-                let d = light.get_direction(point, normal);
-                let dot = normal.dot(d);
-
-                let mut i = light.get_intensity() * dot / (normal.length() * d.length());
-
-                let dot = normal.dot(d);
-                if dot > 0.0 {
-                    i += light.get_intensity() * dot/(normal.length() * d.length());
-                }
-
-                let r = 2.0 * normal * normal.dot(d) - d;
-                let dot = r.dot(dir);
-
-                if dot > 0.0 {
-                    i + light.get_intensity() * (dot / (r.length() * dir.length()))
-                } else {
-                    i
-                }
+                light.get_intensity()
             })
             .filter(| intensive | *intensive > 0.0)
             .sum()
@@ -93,17 +76,17 @@ impl Scene {
             ..FORWARD
         }.normalize();
 
-        // self.intersect_ray(origin, direction)
-        //     .map(| ( Intersect {entry, normal, ..}, object) | {
-        //         let dir = (direction - origin).normalize();
-        //         let point = dir * entry;
-        //
-        //         let light_intensive = self.compute_light(point + normal * 0.0001, dir, normal).clamp(0.0, 150.0) as u8; // All this temporary
-        //         let object_color = object.get_color().0;
-        //
-        //         Rgb::from([object_color[0] + light_intensive, object_color[1] + light_intensive, object_color[2] + light_intensive])
-        //         //object_color
-        //     })
-        //     .unwrap_or(BLACK)
+        self.intersect_ray(origin, direction)
+            .map(| ( Intersect {entry, normal, ..}, object) | {
+                let dir = (direction - origin).normalize();
+                let point = dir * entry;
+
+                let light_intensive = self.compute_light(point + normal * 0.00001, dir, normal).clamp(0.0, 150.0) as u8; // All this temporary
+                let object_color = object.get_color().0;
+
+                Rgb::from([object_color[0] + light_intensive, object_color[1] + light_intensive, object_color[2] + light_intensive])
+                //object_color
+            })
+            .unwrap_or(BLACK)
     }
 }
