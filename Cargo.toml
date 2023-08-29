@@ -5,3 +5,5 @@ edition = "2021"
 authors = ["Blin4ik"]
 
 [dependencies]
+crossterm = "0.26.1"
+nalgebra = "0.32.3"
