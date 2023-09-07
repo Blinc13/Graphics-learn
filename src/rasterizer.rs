@@ -1,6 +1,6 @@
+use nalgebra::SimdPartialOrd;
 use crate::{Canvas, Painter, Rasterizer};
 use crate::ascii_canvas::ASCIICanvas;
-use crate::math::courtesan_to_barycentric;
 use crate::painter::BasicPainter;
 use crate::types::{FVec2, FVec3, FVec4, UVec2};
 
@@ -37,39 +37,28 @@ impl<P: Painter, C: Canvas> Rasterizer for BasicRasterizer<P, C> {
         triangle.iter_mut()
             .for_each(| v | *v = compute_vertex(*v, vert));
 
+        { // Backface culling
+            let view = FVec3::new(0.0, 0.0, 1.0);
+
+            let v1 = triangle[0] - triangle[1];
+            let v2 = triangle[1] - triangle[2];
+
+            let cross = v1.cross(&v2);
+
+            if cross.dot(&view) < 0.0 {
+                return
+            }
+        }
+
         let flat_triangle = [
             triangle[0].xy().add_scalar(0.5).component_mul(&res),
             triangle[1].xy().add_scalar(0.5).component_mul(&res),
             triangle[2].xy().add_scalar(0.5).component_mul(&res)
         ];
 
-        let left = FVec2::new(-1.0, 0.0);
-
-        if flat_triangle.windows(2).all(| w | w[0].angle(&left) >= w[1].angle(&left)) {
-            return
-        }
-
-        // { // If one of vertecies outside viewport, denie fill
-        //     let bounds_x = flat_triangle.iter().map(|v| v.x);
-        //     let bounds_y = flat_triangle.iter().map(|v| v.y);
-        //     let bounds_z = triangle.iter().map(| v | v.z);
-        //
-        //     let comp = | a: &f32, b: &f32 | a.total_cmp(b);
-        //
-        //     let (x_min, x_max) = (bounds_x.clone().min_by(comp).unwrap(), bounds_x.max_by(comp).unwrap());
-        //     let (y_min, y_max) = (bounds_y.clone().min_by(comp).unwrap(), bounds_y.max_by(comp).unwrap());
-        //     let (z_min, z_max) = (bounds_z.clone().min_by(comp).unwrap(), bounds_z.max_by(comp).unwrap());
-        //
-        //     if x_min < 0.0 || x_max > res.x || y_min < 0.0 || y_max > res.y || z_min < -1.0 || z_max > 2.0 {
-        //         println!("Triangle not pass! {z_min} {z_max}");
-        //
-        //         return
-        //     }
-        // }
-
         if let Some(b) = self.z_buffer.as_mut() {
             b.fill_triangle(flat_triangle, | p, v | {
-                let barycentric = courtesan_to_barycentric(p, flat_triangle);
+                let barycentric = calc_barycentric(p, flat_triangle);
                 let depth = calc_avg(2, barycentric, triangle);
 
                 if !(0.0f32..1.0f32).contains(&depth) {
@@ -89,7 +78,7 @@ impl<P: Painter, C: Canvas> Rasterizer for BasicRasterizer<P, C> {
         self.painter.fill_triangle(
             flat_triangle,
             | p, _ | {
-                let barycentric = courtesan_to_barycentric(p, flat_triangle);
+                let barycentric = calc_barycentric(p, flat_triangle);
                 let frag_cord = FVec3::new(
                     calc_avg(0, barycentric, triangle),
                     calc_avg(1, barycentric, triangle),
@@ -124,4 +113,12 @@ fn compute_vertex<V: Copy + Fn(FVec3) -> FVec4>(v: FVec3, vert: V) -> FVec3 {
 #[inline(always)]
 fn calc_avg(i: usize, barycentric: FVec3, points: [FVec3; 3]) -> f32 {
     points[0][i] * barycentric.x + points[1][i] * barycentric.y + points[2][i] * barycentric.z
+}
+
+#[inline(always)]
+fn calc_barycentric(point: FVec2, points: [FVec2; 3]) -> FVec3 {
+    crate::math::courtesan_to_barycentric(point, points).simd_clamp(
+        FVec3::new(0.0, 0.0, 0.0),
+        FVec3::new(1.0, 1.0, 1.0)
+    )
 }

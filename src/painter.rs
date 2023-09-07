@@ -1,3 +1,4 @@
+use nalgebra::{ComplexField, SimdPartialOrd};
 use crate::{Canvas, Painter};
 use crate::types::{FVec2, FVec3, UVec2};
 
@@ -6,6 +7,7 @@ pub struct BasicPainter<C: Canvas> {
 }
 
 impl<C: Canvas> BasicPainter<C> {
+    /// Assumes what x0 < x1
     fn draw_simple_line<F: Copy + Fn(FVec2, FVec3) -> Option<FVec3>>(&mut self, y: u32, x0: u32, x1: u32, pixel_fill: F) {
         for x in x0..x1 {
             let pos = UVec2::new(x, y);
@@ -37,8 +39,19 @@ impl<C: Canvas> Painter for BasicPainter<C> {
     }
 
     fn draw_line<F: Copy + Fn(FVec2, FVec3) -> Option<FVec3>>(&mut self, start: FVec2, end: FVec2, pixel_fill: F) {
+        let size = self.canvas.get_resolution().map(| s | (s as f32 - 1.0).max(0.0));
+
+        let start = FVec2::new(
+            start.x.clamp(0.0, size.x),
+            start.y.clamp(0.0, size.y)
+        );
+        let end = FVec2::new(
+            end.x.clamp(0.0, size.x),
+            end.y.clamp(0.0, size.y)
+        );
+
         let pixel_count = start - end;
-        let pixel_count = (pixel_count.x.abs() + pixel_count.y.abs()) as u32;
+        let pixel_count = pixel_count.max() as u32;
 
         for f in 0..pixel_count {
             let pos = crate::math::interpolate(start, end, (pixel_count - f) as f32 / pixel_count as f32);
@@ -96,7 +109,7 @@ impl<C: Canvas> Painter for BasicPainter<C> {
     }
 }
 
-// Assumes what v1 is upper than v2
+/// Assumes what v1 is upper than v2
 #[inline(always)]
 fn calc_x_by_y(v1: FVec2, v2: FVec2, y: u32) -> u32 {
     let up = v1.y as u32;

@@ -1,4 +1,3 @@
-use crossterm::ExecutableCommand;
 use crossterm::style::{Color, Print, SetForegroundColor};
 use crate::Canvas;
 use crate::types::*;
@@ -20,7 +19,7 @@ impl ASCIICanvas {
         }
     }
 
-    pub fn write<T: ExecutableCommand>(&self, mut dst: T) -> crossterm::Result<()> {
+    pub fn write<T: std::io::Write>(&self, mut dst: T) -> crossterm::Result<()> {
         for line in self.data.iter() {
             for pixel in line.iter() {
                 let color = Color::Rgb {
@@ -29,13 +28,17 @@ impl ASCIICanvas {
                     b: (pixel.z * 255.0) as u8
                 };
 
-                dst
-                    .execute(SetForegroundColor(color))?
-                    .execute(Print("█"))?;
+                crossterm::queue!(
+                    dst,
+                    SetForegroundColor(color),
+                    Print("█")
+                )?
             }
 
-            dst
-                .execute(Print("\n"))?;
+            crossterm::queue!(
+                dst,
+                Print("\n")
+            )?
         }
 
         Ok(())

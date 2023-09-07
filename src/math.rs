@@ -1,5 +1,6 @@
-use std::ops::{Add, Mul, Sub};
-use crate::types::{Mat3, Mat4, FVec3, FVec2};
+use std::cmp::Ordering;
+use std::ops::{Add, Index, Mul, Sub};
+use crate::types::{Mat3, Mat4, FVec3, FVec2, FVec4};
 
 #[inline(always)]
 pub fn interpolate<T: Add<<<T as Sub>::Output as Mul<f32>>::Output, Output = T> + Sub + Copy>(v1: T, v2: T, f: f32) -> T
