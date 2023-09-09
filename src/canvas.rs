@@ -1,4 +1,3 @@
-use crossterm::style::{Color, SetForegroundColor};
 use crate::Canvas;
 use crate::types::{FVec3, UVec2};
 

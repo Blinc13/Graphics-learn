@@ -1,4 +1,3 @@
-use smallvec::SmallVec;
 use crate::types::FVec3;
 use crate::RayIntersection;
 
@@ -63,7 +62,7 @@ impl AxisAlignedBox {
 
     #[inline(always)]
     pub fn contains(&self, point: FVec3) -> bool {
-        self.contains_local(self.pos - point)
+        self.contains_local(point - self.pos)
     }
 
     #[inline(always)]
@@ -76,8 +75,6 @@ impl AxisAlignedBox {
 
 impl RayIntersection for AxisAlignedBox {
     fn intersect(&self, origin: FVec3, direction: FVec3) -> Option<(f32, f32)> {
-        let origin = origin - self.pos;
-
         const NORMALS: &[FVec3] = &[
             FVec3::new(-1.0, 0.0, 0.0),
             FVec3::new(0.0, -1.0, 0.0),
@@ -88,25 +85,26 @@ impl RayIntersection for AxisAlignedBox {
             FVec3::new(0.0, 0.0, 1.0)
         ];
 
-        let components_iter = self.extents.iter()
-            .copied()
-            .chain(self.extents.iter().copied());
+        // Make origin local to box center
+        let origin = origin - self.pos;
 
-        let mut ints: SmallVec<[f32; 2]> = NORMALS
+        let components_iter = std::iter::repeat(
+            self.extents.iter().copied()
+        ).flatten();
+
+        // Iterate over plains, intersect and check if intersection point inside box
+        let mut ints = NORMALS
             .iter()
             .copied()
             .zip(components_iter)
             .filter_map(| (n, d) | Plain {normal: n, dist: d}.intersect(origin, direction))
-            .map(| (d, _) | (d, origin + direction * d))
-            .filter(| (_, p) | self.contains_local(*p * 0.99))
-            .map(| (d, _) | d).collect();
+            .filter(| d | self.contains_local((origin + direction * d.0) * 0.999999/*:)*/))
+            .map(| d | d.0);
 
-        if ints.len() < 2 {
-            None
-        } else {
-            ints.sort_by(| a, b | a.total_cmp(b));
+        // Must be 2 intersection points if ray intersects box
+        let i1 = ints.next()?;
+        let i2 = ints.next()?;
 
-            Some((ints[0], ints[1]))
-        }
+        Some((i1.min(i2), i1.max(i2)))
     }
 }
