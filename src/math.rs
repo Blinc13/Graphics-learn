@@ -1,5 +1,5 @@
 use crate::types::FVec3;
-use crate::RayIntersection;
+use crate::{RayIntersection, IntersectionData};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Plain {
@@ -19,8 +19,10 @@ impl Plain {
 }
 
 impl RayIntersection for Plain {
+    type Meta = ();
+
     #[inline(always)]
-    fn intersect(&self, origin: FVec3, direction: FVec3) -> Option<(f32, f32)> {
+    fn intersect(&self, origin: FVec3, direction: FVec3) -> Option<IntersectionData<Self::Meta>> {
         let dot_dir = self.normal.dot(&direction);
 
         if dot_dir == 0.0 {
@@ -31,7 +33,15 @@ impl RayIntersection for Plain {
         );
         let res = dot / dot_dir;
 
-        Some((res, res))
+        Some(
+            IntersectionData::new(
+                res,
+                res,
+                self.normal,
+                -self.normal,
+                ()
+            )
+        )
     }
 }
 
@@ -74,7 +84,9 @@ impl AxisAlignedBox {
 }
 
 impl RayIntersection for AxisAlignedBox {
-    fn intersect(&self, origin: FVec3, direction: FVec3) -> Option<(f32, f32)> {
+    type Meta = ();
+
+    fn intersect(&self, origin: FVec3, direction: FVec3) -> Option<IntersectionData<Self::Meta>> {
         const NORMALS: &[FVec3] = &[
             FVec3::new(-1.0, 0.0, 0.0),
             FVec3::new(0.0, -1.0, 0.0),
@@ -98,13 +110,29 @@ impl RayIntersection for AxisAlignedBox {
             .copied()
             .zip(components_iter)
             .filter_map(| (n, d) | Plain {normal: n, dist: d}.intersect(origin, direction))
-            .filter(| d | self.contains_local((origin + direction * d.0) * 0.999999/*:)*/))
-            .map(| d | d.0);
+            .filter(| d | self.contains_local((origin + direction * d.min) * 0.9999/*:)*/))
+            .map(| d | d);
 
         // Must be 2 intersection points if ray intersects box
-        let i1 = ints.next()?;
-        let i2 = ints.next()?;
+        let mut i1 = ints.next()?;
+        let mut i2 = ints.next()?;
 
-        Some((i1.min(i2), i1.max(i2)))
+        if i1.min > i2.min {
+            let i = i1;
+
+            i1 = i2;
+            i2 = i;
+        }
+
+        let i = IntersectionData::new(
+            i1.min,
+            i2.max,
+
+            i1.in_normal,
+            i2.in_normal,
+            ()
+        );
+
+        Some(i)
     }
 }
